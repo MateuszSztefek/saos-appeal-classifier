@@ -1,0 +1,25 @@
+# Data lives outside git (see data/README.md)
+data/*
+!data/README.md
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Tooling
+.ruff_cache/
+.pre-commit-cache/
+.mypy_cache/
+
+# IDEs and OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
