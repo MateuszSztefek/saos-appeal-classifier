@@ -12,6 +12,7 @@ dependencies = [
 
 [project.scripts]
 saos-download = "saos_appeals.data.download:main"
+saos-extract = "saos_appeals.data.extract:main"
 
 [dependency-groups]
 dev = [

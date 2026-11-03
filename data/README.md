@@ -8,7 +8,9 @@ data/
   raw/saos/
     judgments/       page-NNNNN.json.gz  -- raw pages of /api/dump/judgments, never edited
     dictionaries/    commonCourts.json, scChambers.json, enrichments.json.gz
-  interim/           filtered / deduplicated subsets derived from raw
+  interim/           derived from raw, reproducible with the package's commands
+    judgments-<courttype>.jsonl.gz   saos-extract: one record per line, deduplicated by id
+    judgments-extract.json           counts and dump provenance for the files above
   processed/         frozen modelling datasets, shared with the team via Google Drive
 ```
 
