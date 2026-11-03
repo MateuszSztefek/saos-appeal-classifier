@@ -10,6 +10,9 @@ dependencies = [
     "tqdm>=4.66",
 ]
 
+[project.scripts]
+saos-download = "saos_appeals.data.download:main"
+
 [dependency-groups]
 dev = [
     "ruff>=0.6",
