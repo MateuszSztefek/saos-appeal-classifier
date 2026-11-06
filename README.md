@@ -48,3 +48,14 @@ uv run saos-download judgments --since 2026-11-01T00:00:00.000   # later updates
 
 Pages land in `data/raw/saos/judgments/page-NNNNN.json.gz`; re-running skips
 pages already on disk. Set `DATA_DIR` to put them elsewhere.
+
+From the raw pages the pipeline builds, in order:
+
+```bash
+uv run saos-extract     # one deduplicated JSON Lines file per court type
+uv run saos-judgments   # records.parquet (with text) and cases.parquet (metadata)
+uv run saos-pair        # pairs.parquet: appeals matched to first-instance judgments,
+                        # plus results/pairing-census.csv
+```
+
+See [data/README.md](data/README.md) for what each file holds.

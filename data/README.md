@@ -15,6 +15,8 @@ data/
                                      court, judges, regulation keys and cleaned text (the only file with text)
     cases.parquet                    saos-judgments: one row per court + case signature, metadata only;
                                      SENTENCE and REASONS records of a case merged (sentence_id / reasons_id)
+    pairs.parquet                    saos-pair: one row per second-instance case with the matched
+                                     first-instance case (if any) and the header fields used to match
   processed/         frozen modelling datasets, shared with the team via Google Drive
 ```
 

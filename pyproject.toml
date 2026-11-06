@@ -16,6 +16,7 @@ dependencies = [
 saos-download = "saos_appeals.data.download:main"
 saos-extract = "saos_appeals.data.extract:main"
 saos-judgments = "saos_appeals.data.judgments:main"
+saos-pair = "saos_appeals.data.pairs:main"
 
 [dependency-groups]
 dev = [
