@@ -11,6 +11,10 @@ data/
   interim/           derived from raw, reproducible with the package's commands
     judgments-<courttype>.jsonl.gz   saos-extract: one record per line, deduplicated by id
     judgments-extract.json           counts and dump provenance for the files above
+    records.parquet                  saos-judgments: one row per record with parsed signature,
+                                     court, judges, regulation keys and cleaned text (the only file with text)
+    cases.parquet                    saos-judgments: one row per court + case signature, metadata only;
+                                     SENTENCE and REASONS records of a case merged (sentence_id / reasons_id)
   processed/         frozen modelling datasets, shared with the team via Google Drive
 ```
 

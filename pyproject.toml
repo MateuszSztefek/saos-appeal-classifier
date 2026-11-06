@@ -7,12 +7,15 @@ license = "MIT"
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "httpx>=0.27",
+    "pandas>=2.2",
+    "pyarrow>=17",
     "tqdm>=4.66",
 ]
 
 [project.scripts]
 saos-download = "saos_appeals.data.download:main"
 saos-extract = "saos_appeals.data.extract:main"
+saos-judgments = "saos_appeals.data.judgments:main"
 
 [dependency-groups]
 dev = [
