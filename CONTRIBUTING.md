@@ -22,6 +22,8 @@
   not define functions that another notebook will need.
 - `ruff` is the linter and formatter; `pre-commit` runs it for you. If a hook
   rewrites a file, stage it again and commit.
+- Parsing code (signatures, headers, label regexes) has tests in `tests/`; run
+  `uv run pytest` before a pull request and add a case for every new pattern.
 - Keep dependencies minimal. A runtime dependency is added only when a script
   needs it; anything used just for development goes to the `dev` group in
   `pyproject.toml`. Run `uv lock` after changing dependencies and commit `uv.lock`.

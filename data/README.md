@@ -17,6 +17,8 @@ data/
                                      SENTENCE and REASONS records of a case merged (sentence_id / reasons_id)
     pairs.parquet                    saos-pair: one row per second-instance case with the matched
                                      first-instance case (if any) and the header fields used to match
+    labels.parquet                   saos-label: appeal outcome (dismissed / changed / set aside ...)
+                                     and binary label read from the appellate ruling text
   processed/         frozen modelling datasets, shared with the team via Google Drive
 ```
 

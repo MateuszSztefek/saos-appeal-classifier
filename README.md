@@ -29,6 +29,15 @@ data/                  raw and derived data, ignored by git (see data/README.md)
 docs/                  project documentation
 ```
 
+## Tests
+
+```bash
+uv run pytest
+```
+
+Tests cover the parsing that the dataset depends on: case signatures,
+judgment headers and the regular expressions that label appeal outcomes.
+
 ## Workflow
 
 Work happens in short-lived branches merged into `main` through pull requests.
@@ -56,6 +65,8 @@ uv run saos-extract     # one deduplicated JSON Lines file per court type
 uv run saos-judgments   # records.parquet (with text) and cases.parquet (metadata)
 uv run saos-pair        # pairs.parquet: appeals matched to first-instance judgments,
                         # plus results/pairing-census.csv
+uv run saos-label       # labels.parquet: appeal outcome from the appellate ruling,
+                        # plus results/label-census.csv
 ```
 
 See [data/README.md](data/README.md) for what each file holds.

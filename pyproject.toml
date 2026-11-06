@@ -17,10 +17,12 @@ saos-download = "saos_appeals.data.download:main"
 saos-extract = "saos_appeals.data.extract:main"
 saos-judgments = "saos_appeals.data.judgments:main"
 saos-pair = "saos_appeals.data.pairs:main"
+saos-label = "saos_appeals.data.labels:main"
 
 [dependency-groups]
 dev = [
     "ruff>=0.6",
+    "pytest>=8.3",
     "pre-commit>=3.8",
     "nbstripout>=0.7",
     "ipykernel>=6.29",
