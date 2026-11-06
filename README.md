@@ -67,6 +67,12 @@ uv run saos-pair        # pairs.parquet: appeals matched to first-instance judgm
                         # plus results/pairing-census.csv
 uv run saos-label       # labels.parquet: appeal outcome from the appellate ruling,
                         # plus results/label-census.csv
+uv run saos-dataset     # data/processed/appeals-<domain>-<hash>.parquet, one per domain
 ```
+
+The frozen datasets in `data/processed/` are what the models train on. They are
+shared through Google Drive rather than rebuilt by everyone; `datasets.json`
+next to them lists each file's SHA-256, row counts and split boundaries, so a
+downloaded copy can be verified with `sha256sum`.
 
 See [data/README.md](data/README.md) for what each file holds.

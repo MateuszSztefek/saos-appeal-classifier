@@ -20,6 +20,12 @@ data/
     labels.parquet                   saos-label: appeal outcome (dismissed / changed / set aside ...)
                                      and binary label read from the appellate ruling text
   processed/         frozen modelling datasets, shared with the team via Google Drive
+    appeals-<domain>-<hash8>.parquet   saos-dataset: one row per appeal; first-instance judgment
+                                       (metadata, operative part, reasons) as input, label as target,
+                                       `split` (temporal train/valid/test, for the final report) and
+                                       `fold` (stratified 5-fold, for development);
+                                       hash8 = first 8 hex of the file's SHA-256
+    datasets.json                      counts, split boundaries, filters, git commit, full hashes
 ```
 
 Rules:

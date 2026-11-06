@@ -444,7 +444,7 @@ def main(argv: list[str] | None = None) -> int:
     pairs = build_pairs(args.cases, args.records, args.out, args.domain)
     summary = census(pairs)
     args.census.parent.mkdir(parents=True, exist_ok=True)
-    summary.to_csv(args.census, index=False)
+    summary.to_csv(args.census, index=False, lineterminator="\n")
     matched = int(pairs["first_case_key"].notna().sum())
     log.info(
         "done: %d second-instance cases, %d paired, %d usable (both texts); census in %s",

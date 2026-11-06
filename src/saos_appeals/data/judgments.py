@@ -395,8 +395,16 @@ def _pick_records(small: pd.DataFrame) -> pd.DataFrame:
     main = main.set_index("case_key")[["id", "judgment_type", "operative_len"]]
     main.columns = ["main_id", "main_type", "operative_len"]
 
+    # Reasons: a REASONS record with text first, then a sentence that carries its
+    # reasons, then an empty REASONS record (has_reasons stays true, length 0).
     cand = small[is_reasons | (is_sentence & (small["reasons_len"] > 0))]
-    cand = cand.assign(_prio=np.where(cand["judgment_type"] == "REASONS", 0, 1))
+    cand = cand.assign(
+        _prio=np.select(
+            [(cand["judgment_type"] == "REASONS") & (cand["reasons_len"] > 0), is_sentence[cand.index]],
+            [0, 1],
+            2,
+        )
+    )
     cand = cand.sort_values(
         ["case_key", "_prio", "reasons_len"], ascending=[True, True, False]
     ).drop_duplicates("case_key")

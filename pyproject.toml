@@ -18,6 +18,7 @@ saos-extract = "saos_appeals.data.extract:main"
 saos-judgments = "saos_appeals.data.judgments:main"
 saos-pair = "saos_appeals.data.pairs:main"
 saos-label = "saos_appeals.data.labels:main"
+saos-dataset = "saos_appeals.data.dataset:main"
 
 [dependency-groups]
 dev = [
