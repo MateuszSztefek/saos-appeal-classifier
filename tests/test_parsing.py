@@ -1,5 +1,7 @@
+import pytest
+
 from saos_appeals.data.judgments import parse_signature
-from saos_appeals.data.pairs import court_tokens, parse_header
+from saos_appeals.data.pairs import court_matches, court_tokens, parse_header
 from saos_appeals.data.text import html_to_text, split_operative_reasons
 
 
@@ -67,3 +69,32 @@ def test_court_tokens_drop_anonymised_parts():
         "mokotowa",
         "warszawie",
     }
+
+
+@pytest.mark.parametrize(
+    ("dictionary_name", "header", "expected"),
+    [
+        ("Sąd Rejonowy w Lubinie", "Sądu Rejonowego w Lubinie", True),
+        ("Sąd Rejonowy w Lubinie", "Sądu Rejonowego w Legnicy", False),
+        # header omits the seat of a named district court
+        (
+            "Sąd Rejonowy dla Wrocławia-Śródmieścia we Wrocławiu",
+            "Sądu Rejonowego dla Wrocławia-Śródmieścia X Wydział Pracy",
+            True,
+        ),
+        # sibling court in the same city
+        (
+            "Sąd Rejonowy dla Wrocławia-Śródmieścia we Wrocławiu",
+            "Sądu Rejonowego dla Wrocławia-Krzyków",
+            False,
+        ),
+        ("Sąd Okręgowy w Piotrkowie Trybunalskim", "Sądu Okręgowego w Piotrkowie Tryb.", True),
+        (
+            "Sąd Rejonowy Gdańsk-Południe w Gdańsku",
+            "Sądu Rejonowego Gdańsk-Północ w Gdańsku",
+            False,
+        ),
+    ],
+)
+def test_court_matches(dictionary_name, header, expected):
+    assert court_matches(dictionary_name, court_tokens(header)) is expected

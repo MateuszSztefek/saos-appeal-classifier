@@ -93,16 +93,39 @@ def _iso(day: str, month_name: str | None, month_num: str | None, year: str) -> 
 
 def court_tokens(name: str) -> set[str]:
     """Words that identify a court: ``"Sąd Rejonowy dla Warszawy-Mokotowa w Warszawie"``
-    gives ``{"warszawy", "mokotowa", "warszawie"}``. Anonymised bits like ``"W."``
-    or ``"(...)"`` are dropped, so an anonymised header gives an empty set."""
+    gives ``{"warszawy", "mokotowa", "warszawie"}``. Abbreviations keep their stem
+    (``"Tryb."`` -> ``"tryb"``); anonymised bits like ``"W."`` or ``"(...)"`` are
+    dropped, so an anonymised header gives an empty set."""
     out: set[str] = set()
     for tok in re.split(r"[\s\-–]+", name.lower().replace(",", "")):
+        tok = tok.rstrip(".")
         if not tok or tok in _GENERIC_COURT_WORDS or re.fullmatch(r"[ivxl]+", tok):
             continue
-        if len(tok) <= 2 or tok.endswith(".") or "(" in tok or ")" in tok:
+        if len(tok) <= 2 or "(" in tok or ")" in tok:
             continue
         out.add(tok)
     return out
+
+
+_SEAT_SUFFIX = re.compile(r"\s+we?\s+\S+$")
+
+
+def court_matches(dictionary_name: str, header_tokens: set[str]) -> bool:
+    """Does the header's court phrase name the dictionary court?
+
+    Headers drop the seat of a named district court ("Sądu Rejonowego dla
+    Wrocławia-Śródmieścia", without "we Wrocławiu") and abbreviate ("Piotrkowie
+    Tryb."), so the seat is ignored for "dla ..." courts and tokens compare by a
+    four-letter stem. An empty header set (anonymised) matches nothing here;
+    callers treat it as unknown.
+    """
+    core = dictionary_name
+    if " dla " in core.lower():
+        core = _SEAT_SUFFIX.sub("", core)
+    needed = court_tokens(core)
+    return bool(needed) and all(
+        any(h[:4] == n[:4] for h in header_tokens) for n in needed
+    )
 
 
 def parse_header(operative_text: str) -> dict[str, Any]:
@@ -237,9 +260,12 @@ def match_one(
                 continue
             for cand in index.get(_key(appeal["court_id"], sig), []):
                 cand_date = cand["judgment_date"]
+                # The appeal must be later, unless the header confirms the date
+                # exactly (then the appellate judgment_date is the typo).
                 if cand_date and appeal_date and cand_date >= appeal_date:
-                    continue
-                if header_court and not court_tokens(cand["court_name"]) <= header_court:
+                    if cand_date != header_date:
+                        continue
+                if header_court and not court_matches(cand["court_name"], header_court):
                     continue
                 candidates.append(cand)
         if not candidates:
