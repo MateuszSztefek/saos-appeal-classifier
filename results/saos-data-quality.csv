@@ -1,0 +1,32 @@
+issue,count,out_of,share,note,example
+SENTENCE record with empty textContent,21256,357527,0.0595,"by court level {'REGIONAL': 10005, 'DISTRICT': 6535, 'APPEAL': 4716}; the judgment exists in SAOS but carries no text",491584
+REASONS record with empty textContent,4823,53072,0.0909,reasons announced but not published,"[418676, 391901, 424568]"
+judgment date outside 1990–2026 or unparseable,3,474894,0.0,"typos in the source, e.g. year 208 or 3013","[(358516, '0208-03-14'), (227221, '2101-04-14'), (31345, '3013-12-04')]"
+published before the judgment date,44,474894,0.0001,publication_date earlier than judgment_date,"[[199625, '2016-02-13', '2016-02-10'], [175911, '2016-05-26', '2015-09-09']]"
+reasons record dated before its sentence,152,39654,0.0038,in cases with separate SENTENCE and REASONS records,"['276|XVII AmC 334/09', '276|XVII AmC 935/09', '276|XVII AmC 124/07']"
+reasons record dated > 1 year after its sentence,121,39654,0.0031,"REASONS judgment_date is often the date reasons were written, not the ruling date","['39|II K 11/03', '159|III Ca 1544/16', '276|XVII AmC 5200/11']"
+case signature not in the standard form,1810,474894,0.0038,"most common shapes [('IN C N/N', 1271), ('I N C N/N', 151), ('IIN C N/N', 130), ('XII NCo N/N', 82)]","['IV 1 P 51/11', 'IV 2 P 365/10', 'XI 1Ca 508/13']"
+  of which a digit after the division numeral (I 2C 15/13),1807,1810,0.9983,sub-divisions numbered with digits in a few courts,"['IV 1 P 51/11', 'IV 2 P 365/10', 'XI 1Ca 508/13']"
+case with more than one SENTENCE record,1753,418164,0.0042,"same court and signature, several sentences (re-trial, partial judgment or duplicate upload)","['101|I C 398/24', '11|III RC 32/15']"
+case key shared by 3+ records,1035,55368,0.0187,out of cases with more than one record,"['276|XVII AmC 45/03', '276|XVII AmC 15/04', '276|XVII AmC 66/05']"
+labour / social-insurance signature outside a labour division,1,106231,0.0,division types seen {'Karny': 1},['II Pen 257/19']
+other signature inside a labour division,89,106319,0.0008,codes seen {'S': 89},"['III S 6/10', 'III S 10/10', 'III S 2/12']"
+record without any judge,48421,474894,0.102,,"[275239, 140132, 148916]"
+judge name anonymised to initials,0,734415,0.0,"anonymisation applied to the bench, not only to parties",[]
+two judges in one name field,89,734415,0.0001,names joined with 'i' in the source,"['jacek sikorski i bogdan gierzyński', 'wanda czajkowska marcin piotrowski po rozpoznaniu dniu lipca r. warszawie na roz"
+record without keywords,141270,474894,0.2975,,"[275239, 268973, 126364]"
+record without legal bases,137334,474894,0.2892,,"[358516, 275239, 268973]"
+record without summary,430080,474894,0.9056,,"[358516, 342525, 136673]"
+SAOS judgmentIds link from an appeal to a case in: unrelated court,376808,424874,0.8869,links resolved against the court dictionary; example is appeal -> linked case,59|I ACa 1100/09 -> 26|I C 83/09
+SAOS judgmentIds link from an appeal to a case in: same court,26035,424874,0.0613,links resolved against the court dictionary; example is appeal -> linked case,89|II AKa 236/99 -> 89|II AKa 115/99
+SAOS judgmentIds link from an appeal to a case in: child court (plausible),22031,424874,0.0519,links resolved against the court dictionary; example is appeal -> linked case,275|VI ACa 422/10 -> 276|XVII AmA 55/09
+appeal sentence without text,16369,175076,0.0935,,"['89|II AKa 80/06', '89|II AKa 199/06', '89|II AKa 326/06']"
+appeal text without a recognisable header,11079,158707,0.0698,"reopening (skarga o wznowienie), typos, transcripts","['59|I ACa 1288/06', '59|I ACa 1397/06', '159|V Ka 475/09']"
+header without a first-instance signature,1855,147628,0.0126,,"['89|II AKa 247/03', '89|II AKa 132/04', '89|II AKa 179/04']"
+first-instance judgment not published in SAOS,132433,145773,0.9085,the header names a signature that no child court has in the dump,"['89|II AKa 31/98', '89|II AKa 43/99', '89|II AKa 72/99']"
+matched by signature but header date or court disagrees,1191,13340,0.0893,sibling courts reuse signatures; another judgment in the same case,"['275|VI ACa 630/11', '1|II AKa 84/12', '275|I ACa 1309/11']"
+"appellate text is a hearing transcript, not a judgment",251,148512,0.0017,OCR/ASR output with timestamps,"['20|II Ca 665/14', '159|VII Ua 124/14']"
+ruling unrecognised although the text speaks of dismissing the appeal,35,148512,0.0002,"typos such as oddal apelacje, or the reasons uploaded in place of the sentence","['Uzasadnienie wyroku z dnia 18 kwietnia 2014 r.\n\nSąd Okręgowy zważył, co następuje.\n\nApelacja podlega oddaleniu. Za"
+ruling text empty (sentence ends with the header),1239,148512,0.0083,,"['89|II AKa 43/99', '89|II AKa 115/99', '89|II AKa 91/99']"
+first-instance reasons with heavy anonymisation (> 5 '(...)' per 1k chars),155,10446,0.0148,median 0.8 per 1k chars across the frozen datasets,"['133|I C 1923/16 -> 123|I ACa 1219/21', '133|I C 44/16 -> 123|I ACa 963/17']"
+"first-instance reasons shorter than 2,000 chars",4,10446,0.0004,likely truncated or only a fragment published,"['79|I C 623/13 -> 75|IV Ca 419/16', '24|III K 602/17 -> 20|IV Ka 773/17']"

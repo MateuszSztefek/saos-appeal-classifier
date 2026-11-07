@@ -429,7 +429,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--census",
         type=Path,
-        default=Path("results/pairing-census.csv"),
+        default=config.RESULTS_DIR / "pairing-census.csv",
         help="per-domain summary CSV (default: results/pairing-census.csv)",
     )
     parser.add_argument(

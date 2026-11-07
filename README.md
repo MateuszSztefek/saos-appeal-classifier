@@ -1,8 +1,9 @@
 # saos-appeal-classifier
 
-Predicting whether an appeal against a first-instance judgment in a Polish
-labour-law or social-insurance case will be granted, using public court
-judgments from [SAOS](https://www.saos.org.pl) (System Analizy Orzeczeń Sądowych).
+Predicting whether an appeal against a first-instance judgment of a Polish
+common court will be granted, from the first-instance judgment itself, using
+public court judgments from [SAOS](https://www.saos.org.pl) (System Analizy
+Orzeczeń Sądowych).
 
 ## Quickstart
 
@@ -28,6 +29,21 @@ results/               experiment result tables (CSV / JSON) committed to the re
 data/                  raw and derived data, ignored by git (see data/README.md)
 docs/                  project documentation
 ```
+
+## Notebooks
+
+Exploration lives in `notebooks/`, numbered in reading order. The notebooks are
+thin: shared code is in `saos_appeals.eda` and `saos_appeals.quality`.
+
+| notebook | what it shows |
+|---|---|
+| `01_eda_civil.ipynb` | the civil dataset: target, time, courts, bench, texts, legal bases |
+| `02_eda_social_insurance.ipynb` | the same for social-insurance cases |
+| `03_eda_labour.ipynb` | the same for labour-law cases |
+| `04_saos_data_quality.ipynb` | what is wrong or missing in the SAOS dump; writes `results/saos-data-quality.csv` |
+
+Run them with `uv run jupyter lab`. They need the frozen datasets in
+`data/processed/` (the quality notebook also needs `data/interim/`).
 
 ## Tests
 

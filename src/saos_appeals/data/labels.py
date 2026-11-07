@@ -219,7 +219,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--pairs", type=Path, default=config.INTERIM_DIR / "pairs.parquet")
     parser.add_argument("--records", type=Path, default=config.INTERIM_DIR / "records.parquet")
     parser.add_argument("--out", type=Path, default=config.INTERIM_DIR / "labels.parquet")
-    parser.add_argument("--census", type=Path, default=Path("results/label-census.csv"))
+    parser.add_argument("--census", type=Path, default=config.RESULTS_DIR / "label-census.csv")
     return parser
 
 
