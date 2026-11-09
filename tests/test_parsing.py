@@ -28,6 +28,13 @@ def test_parse_signature_first_instance_and_two_digit_year():
     assert sig["case_year"] == 1997
 
 
+def test_parse_signature_pen_is_criminal_not_labour():
+    sig = parse_signature("II Pen 257/19")
+    assert sig["code"] == "Pen"
+    assert sig["domain"] == "criminal"
+    assert sig["appeal_kind"] == "first_instance"
+
+
 def test_parse_signature_rejects_garbage():
     assert parse_signature("I 2C 1691/13")["code"] is None
 

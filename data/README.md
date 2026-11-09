@@ -31,6 +31,9 @@ data/
 Rules:
 
 - `raw/` is write-once. Re-download rather than fix in place.
+- Source-specific cleaning rules and their evidence are documented in
+  [`CLEANING.md`](./CLEANING.md) and implemented in
+  `src/saos_appeals/data/cleaning.py`.
 - Anything in `processed/` that the team shares must be reproducible from `raw/`
   with a script in `src/saos_appeals/` and must carry a content hash in its name
   or sidecar file so everyone can verify they have the same version.

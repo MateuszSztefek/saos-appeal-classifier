@@ -43,6 +43,7 @@ import pyarrow.parquet as pq
 from tqdm import tqdm
 
 from saos_appeals import config
+from saos_appeals.data.cleaning import clean_judgment_date
 from saos_appeals.data.text import html_to_text, split_operative_reasons
 
 log = logging.getLogger(__name__)
@@ -60,6 +61,7 @@ _DOMAIN_PREFIXES = [
     ("RNs", "family"),
     ("Nsm", "family"),
     ("Np", "labour"),
+    ("Pen", "criminal"),
     ("P", "labour"),
     ("U", "social_insurance"),
     ("G", "commercial"),
@@ -251,14 +253,15 @@ def record_to_row(record: dict[str, Any], divisions: dict[int, dict[str, Any]]) 
     else:
         operative, reasons = split_operative_reasons(text)
     court_id = div.get("court_id")
+    judgment_date = clean_judgment_date(record)
     return {
         "id": record["id"],
         "case_key": f"{court_id}|{sig['case_number_norm']}" if court_id else None,
         "case_number": case_number,
         **sig,
         "judgment_type": record.get("judgmentType"),
-        "judgment_date": record.get("judgmentDate"),
-        "judgment_year": _judgment_year(record.get("judgmentDate")),
+        "judgment_date": judgment_date,
+        "judgment_year": _judgment_year(judgment_date),
         "division_id": (record.get("division") or {}).get("id"),
         "division_name": div.get("division_name"),
         "division_type": div.get("division_type"),

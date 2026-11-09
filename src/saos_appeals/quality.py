@@ -25,6 +25,7 @@ import pandas as pd
 import pyarrow.parquet as pq
 
 from saos_appeals import config
+from saos_appeals.data.cleaning import JUDGMENT_DATE_CORRECTIONS
 
 RECORD_COLUMNS = [
     "id",
@@ -78,7 +79,14 @@ def load(interim: Path = config.INTERIM_DIR, processed: Path = config.PROCESSED_
     return Tables(records, cases, pairs, labels, datasets)
 
 
-def _row(issue: str, count: int, out_of: int, note: str = "", example: Any = "") -> dict[str, Any]:
+def _row(
+    issue: str,
+    count: int,
+    out_of: int,
+    note: str = "",
+    example: Any = "",
+    treatment: str = "Not assessed",
+) -> dict[str, Any]:
     return {
         "issue": issue,
         "count": int(count),
@@ -86,6 +94,7 @@ def _row(issue: str, count: int, out_of: int, note: str = "", example: Any = "")
         "share": round(count / out_of, 4) if out_of else None,
         "note": note,
         "example": str(example)[:120],
+        "treatment": treatment,
     }
 
 
@@ -132,13 +141,25 @@ def dates(t: Tables) -> list[dict[str, Any]]:
     d1 = pd.to_datetime(two["sentence_id"].map(rec_date), errors="coerce")
     d2 = pd.to_datetime(two["reasons_id"].map(rec_date), errors="coerce")
     gap = (d2 - d1).dt.days
+    source_anomaly_ids = set(bad_year["id"]) | set(JUDGMENT_DATE_CORRECTIONS)
+    correction_examples = ";".join(
+        f"{record_id}:{original}->{corrected}"
+        for record_id, (original, corrected) in JUDGMENT_DATE_CORRECTIONS.items()
+    )
+    remaining_examples = ";".join(
+        f"{record_id}:{date}"
+        for record_id, date in bad_year.loc[
+            ~bad_year["id"].isin(JUDGMENT_DATE_CORRECTIONS), ["id", "judgment_date"]
+        ].itertuples(index=False, name=None)
+    )
     return [
         _row(
             "judgment date outside 1990–2026 or unparseable",
-            len(bad_year),
+            len(source_anomaly_ids),
             len(r),
             "typos in the source, e.g. year 208 or 3013",
-            list(zip(bad_year["id"], bad_year["judgment_date"], strict=False))[:3],
+            ";".join(filter(None, (correction_examples, remaining_examples))),
+            "Fixable; corrected in preprocessing",
         ),
         _row(
             "published before the judgment date",
@@ -218,6 +239,7 @@ def divisions(t: Tables) -> list[dict[str, Any]]:
             labour_code.sum(),
             f"division types seen {mismatch_a['division_type'].value_counts().head(3).to_dict()}",
             mismatch_a["case_number"].head(3).tolist(),
+            "Corrected in parser",
         ),
         _row(
             "other signature inside a labour division",
