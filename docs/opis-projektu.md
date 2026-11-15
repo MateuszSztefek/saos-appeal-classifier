@@ -51,9 +51,9 @@ Zbiór obejmuje apelacje z kilku dziedzin prawa. Najwięcej spraw udało się po
 | cywilne | 86 462 | 8 168 | 5 994 | 5 919 |
 
 Wśród wszystkich zgromadzonych spraw znajdują się również sprawy karne,
-gospodarcze i rodzinne. Do dalszego modelowania rozważamy jedną z trzech
-najliczniejszych dziedzin: prawo pracy, ubezpieczenia społeczne albo sprawy
-cywilne.
+gospodarcze i rodzinne; są one poza zakresem projektu. Do dalszego modelowania
+rozważamy jedną z trzech dziedzin: prawo pracy, ubezpieczenia społeczne albo
+sprawy cywilne.
 
 Odsetek uwzględnionych apelacji w przygotowanych zbiorach różni się między
 dziedzinami:
@@ -61,7 +61,6 @@ dziedzinami:
 | dziedzina | liczba spraw | uwzględnione apelacje |
 |---|---:|---:|
 | prawo pracy | 406 | 18,7 % |
-
 | ubezpieczenia społeczne | 1 404 | 25,6 % |
 | cywilne | 5 919 | 35,1 % |
 
