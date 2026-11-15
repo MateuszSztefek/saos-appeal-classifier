@@ -8,10 +8,14 @@ zgaduje to sama częstość bazowa?
 
 ## 2. Zakres
 
-**Decyzja otwarta: domena.** Zamrożone zbiory istnieją dla sześciu domen,
-ale sensowne do modelowania są trzy. Opcje:
+**Decyzja otwarta: dziedzina prawa.** Przygotowane zbiory spraw są dostępne dla
+sześciu dziedzin. Każdy wiersz opisuje apelację połączoną z wyrokiem pierwszej
+instancji, który ma uzasadnienie i rozpoznany wynik apelacji. Wejściem modelu
+będzie wyrok pierwszej instancji, a przewidywanym wynikiem — informacja, czy
+apelację oddalono, czy zmieniono lub uchylono wyrok. Do modelowania rozważamy
+trzy dziedziny:
 
-| opcja | wiersze | udział uwzględnionych | za |
+| opcja | sprawy w zbiorze | uwzględnione apelacje | za |
 |---|---|---|---|
 | A. prawo pracy | 406 | 19 % | jednorodna domena, czytelna interpretacja |
 | B. ubezpieczenia społeczne | 1 404 | 26 % | ten sam wydział sądu co prawo pracy, 3,5 raza więcej danych |
@@ -35,13 +39,15 @@ Co już wiemy:
 - Model „zawsze oddala” ma trafność ok. 81 % w prawie pracy, 74 % w ZUS i 65 %
   w cywilnych. Trafność sama w sobie nic nie mówi, potrzebujemy metryki wrażliwej
   na klasę mniejszościową.
-- Zamrożone zbiory mają dwie kolumny: `split` (podział czasowy 70/15/15 po dacie
-  apelacji) i `fold` (losowy, stratyfikowany po etykiecie podział na 5 części).
+- Wstępne zbiory mają dwa przypisane podziały. `split` dzieli sprawy chronologicznie
+  według daty apelacji: 70 % do `train` (uczenie), 15 % do `valid` (dobór modelu)
+  i 15 % do `test` (końcowa ocena). `fold` przypisuje sprawy losowo do jednej
+  z pięciu części, z zachowaniem proporcji etykiet.
   Podział czasowy po dacie apelacji jest sensowny, bo etykieta powstaje w tej dacie.
-  Z foldami w obecnej postaci są trzy problemy:
-  1. **Foldy obejmują też wiersze z `test`.** Każdy split zawiera wszystkie pięć foldów.
-     Dobór modelu walidacją krzyżową na całym zbiorze i raport na `test` oznacza, że
-     zbiór testowy brał udział w rozwoju.
+  Z obecnym podziałem `fold` są trzy problemy:
+  1. **Foldy obejmują też sprawy z `test`.** Każda z pięciu części zawiera sprawy
+     z `train`, `valid` i `test`. Użycie ich wszystkich do wyboru modelu, a potem
+     raportowanie wyniku na `test`, oznaczałoby, że test brał udział w rozwoju.
   2. **Losowe foldy ignorują czas.** Model uczony na sprawach z 2024 ocenia sprawy
      z 2014. Dane pokazują dryf: w cywilnych udział uwzględnionych rośnie z 33 %
      w `train` do 42 % w `test`. Walidacja krzyżowa ten dryf ukrywa.
@@ -50,8 +56,9 @@ Co już wiemy:
      serię między train i test; model może zapamiętać szablon uzasadnienia i tendencję
      sądu. Stratyfikacja po etykiecie nic na to nie daje.
 
-  Wnioski: kolumna `fold` nie nadaje się do użycia na wierszach testowych i przy
-  najbliższym odświeżeniu zbiorów trzeba ją przebudować albo usunąć. Opcje do
+  Wnioski: obecnego podziału `fold` nie należy używać do oceny końcowej na
+  sprawach `test`. Przy kolejnym przygotowaniu zbiorów trzeba go przebudować
+  albo usunąć. Opcje do
   rozważenia: tylko podział czasowy (w prawie pracy `test` to 61 wierszy, ok. 11
   pozytywnych); foldy wyłącznie wewnątrz `train` + `valid`; walidacja czasowa
   krocząca (uczenie do roku t, ocena na t+1); foldy grupowe po sądzie, sędzim
@@ -67,13 +74,22 @@ Do ustalenia:
 
 ## 4. Eksperymenty
 
-Pierwszy krok jest pewny: **baseline** na metadanych wyroku (sąd, rok, przepisy,
-hasła tematyczne, długości tekstów) z prostym modelem, np. regresją logistyczną.
+Pierwszy krok jest pewny: **baseline**, czyli prosty punkt odniesienia. Będzie
+oparty na informacjach o wyroku pierwszej instancji (sąd, rok, przepisy, hasła
+tematyczne i długość tekstu) i prostym modelu, np. regresji logistycznej.
 
-Cecha do rozważenia przed baselinem: **kto wnosi apelację** (powód / pozwany / obie
-strony). Jest w nagłówku orzeczenia apelacyjnego („na skutek apelacji pozwanego”),
-znana przed wyrokiem, więc nie jest wyciekiem. Trzeba ją wyciągnąć w `saos-pair`
-i dodać do zbioru, co zmieni hash plików.
+Po sprawdzeniu baseline'u rozważymy analizę tekstu uzasadnienia, a następnie
+reprezentację grafową łączącą sprawy przez przywołane przepisy prawa. Jeśli
+wyniki i czas na to pozwolą, graf można rozszerzyć o informacje o składzie
+sędziowskim lub cytowanych wyrokach. Porównamy, czy takie podejście poprawia
+przewidywanie wyniku.
+
+Do decyzji przed rozpoczęciem eksperymentów: czy uwzględnić **informację, kto
+wniósł apelację** (powód, pozwany lub obie strony). Można ją odczytać z opisu
+sprawy apelacyjnej, ale nie jest częścią wyroku pierwszej instancji. Jej dodanie
+zmieniłoby zakres pytania: model korzystałby wtedy również z informacji znanej
+po wniesieniu apelacji, lecz przed jej rozstrzygnięciem. Jeśli ją uwzględnimy,
+trzeba będzie uzupełnić dane i ponownie przygotować zbiory.
 
 ## 5. Harmonogram
 
@@ -88,7 +104,7 @@ Dwa terminy z przedmiotu:
 
 - [x] Repo, środowisko, CI, zasady współpracy (2026-11-03)
 - [x] Pobranie zrzutu SAOS i podział na typy sądów (2026-11-03)
-- [x] Parowanie apelacji z pierwszą instancją, etykieta, zamrożone zbiory (2026-11-06)
+- [x] Połączenie apelacji z wyrokami pierwszej instancji, ustalenie wyników i przygotowanie zbiorów (2026-11-06)
 - [x] Notatniki EDA dla trzech domen i raport jakości danych SAOS (2026-11-07)
 - [x] Udostępnienie zbiorów zespołowi przez Google Drive
 
@@ -117,7 +133,7 @@ Dwa terminy z przedmiotu:
 | wyciek informacji z drugiej instancji | zawyżone wyniki, bezwartościowy model | w zbiorze nie ma tekstu apelacyjnego; każda cecha liczona z innych spraw musi powstawać wyłącznie na danych treningowych |
 | niezbalansowanie klas | trafność myli | metryka wrażliwa na klasę mniejszościową, do ustalenia w sekcji 3 |
 | błędy etykiety z regexu | szum w celu | ręczna weryfikacja losowej próbki etykiet, wynik zapisany w `results/` |
-| dryf w czasie | model uczy się „sędzia X w 2019” | kolumna `split` z podziałem czasowym jest w danych; jej użycie do ustalenia w sekcji 3 |
+| dryf w czasie | wyniki mogą zmieniać się między latami | wstępny zbiór zawiera podział chronologiczny `split`; sposób jego wykorzystania ustalimy w sekcji 3 |
 | kosztowne metody (duże modele językowe, grafy) | utopiony czas bez zysku nad baselinem | najpierw baseline, dalsze kroki dopiero na podstawie jego wyników |
 
 ## 7. Decyzje
@@ -128,6 +144,6 @@ Dwa terminy z przedmiotu:
 | 2026-11-03 | dane poza gitem, udostępniane przez Google Drive, pliki nazwane hashem | repo ma być lekkie, a wersja zbioru jednoznaczna |
 | 2026-11-06 | nie ufamy linkom `judgmentIds` z SAOS, parujemy po nagłówku i hierarchii sądów | 89 % linków wskazuje niepowiązany sąd |
 | 2026-11-06 | etykieta binarna: cokolwiek zmieniono → 1; odrzucenie i umorzenie poza zbiorem | te wyniki nie mówią nic o trafności wyroku |
-| 2026-11-07 | model tekstowy tylko na wierszach z uzasadnieniem pierwszej instancji | bez uzasadnienia tekst to sam nagłówek |
+| 2026-11-07 | model tekstowy tylko na sprawach z uzasadnieniem pierwszej instancji | bez uzasadnienia brak tekstu, na którym można oprzeć analizę |
 | `[data]` | domena: `[A / B / C]` | |
-| `[data]` | schemat walidacji: `[do ustalenia, sekcja 3]`; kolumny `split` i `fold` w zbiorach są wstępne, nie decyzją | w obecnych foldach są trzy problemy opisane w sekcji 3 |
+| `[data]` | schemat oceny modeli: `[do ustalenia, sekcja 3]`; istniejące podziały `split` i `fold` są wstępne | w obecnym podziale `fold` są problemy opisane w sekcji 3 |
