@@ -142,21 +142,6 @@ _MODEL_GUIDANCE: dict[str, tuple[str, str]] = {
         "low",
         "Summary is not included in the current modelling input.",
     ),
-    "SAOS judgmentIds link from an appeal to a case in: unrelated court": (
-        "high",
-        "Trusting these links would create incorrect first-instance pairs; "
-        "the pipeline ignores them.",
-    ),
-    "SAOS judgmentIds link from an appeal to a case in: same court": (
-        "high",
-        "Trusting these links would create incorrect first-instance pairs; "
-        "the pipeline ignores them.",
-    ),
-    "SAOS judgmentIds link from an appeal to a case in: child court (plausible)": (
-        "medium",
-        "Some links are plausible, but they are not sufficient without header "
-        "and hierarchy checks.",
-    ),
     "appeal sentence without text": (
         "high",
         "The appeal outcome cannot be read from an empty sentence, so the row cannot be labelled.",
@@ -190,9 +175,10 @@ _MODEL_GUIDANCE: dict[str, tuple[str, str]] = {
         "high",
         "Missed outcomes create label loss or systematic label bias.",
     ),
-    "ruling text empty (sentence ends with the header)": (
+    "ruling extraction empty after the header": (
         "high",
-        "The target cannot be reliably extracted from an empty ruling.",
+        "This is an extraction issue, not confirmed source truncation; the rule "
+        "must be audited and fixed.",
     ),
     "first-instance reasons with heavy anonymisation (> 5 '(...)' per 1k chars)": (
         "medium",
@@ -230,21 +216,14 @@ _TREATMENTS: dict[str, str] = {
     ),
     "other signature inside a labour division": "Review mapping; exclude unresolved mismatches.",
     "record without any judge": "Retain if otherwise valid; leave judge missing.",
-    "record without a presiding judge in the modelling set": "Retain; do not infer the judge.",
+    "record without a presiding judge in the modelling set": (
+        "Implementation change required: infer only the single-judge cases."
+    ),
     "judge name anonymised to initials": "Retain; treat judge feature as missing.",
     "two judges in one name field": "Implementation change required: validate name splitting.",
     "record without keywords": "Retain; optional metadata.",
     "record without legal bases": "Retain if valid; leave legal bases missing.",
     "record without summary": "Retain; optional metadata.",
-    "SAOS judgmentIds link from an appeal to a case in: unrelated court": (
-        "Ignore; use header-based pairing."
-    ),
-    "SAOS judgmentIds link from an appeal to a case in: same court": (
-        "Ignore; require independent confirmation."
-    ),
-    "SAOS judgmentIds link from an appeal to a case in: child court (plausible)": (
-        "Diagnostic only; require confirmation."
-    ),
     "appeal sentence without text": "Exclude from labels; retain for audit.",
     "appeal text without a recognisable header": (
         "Exclude unless a reliable reference is recovered."
@@ -262,7 +241,9 @@ _TREATMENTS: dict[str, str] = {
     "ruling unrecognised although the text speaks of dismissing the appeal": (
         "Implementation change required: expand outcome patterns; exclude unknowns."
     ),
-    "ruling text empty (sentence ends with the header)": "Exclude from labelled modelling.",
+    "ruling extraction empty after the header": (
+        "Implementation change required: fix extraction; exclude only confirmed missing rulings."
+    ),
     "first-instance reasons with heavy anonymisation (> 5 '(...)' per 1k chars)": (
         "Retain; flag and evaluate separately."
     ),
@@ -540,48 +521,6 @@ def enrichment_coverage(t: Tables) -> list[dict[str, Any]]:
 # --- checks on links and pairing ----------------------------------------------
 
 
-def saos_links(t: Tables) -> list[dict[str, Any]]:
-    """SAOS' own ``judgmentIds`` cross-references, judged against the court hierarchy."""
-    c = t.cases
-    pairs_of_ids = zip(c["case_key"], c["record_ids"], strict=False)
-    id2case = {int(i): k for k, ids in pairs_of_ids for i in ids}
-    meta = c.set_index("case_key")[["court_id", "parent_court_id"]].to_dict("index")
-    appeals = c[
-        c["appeal_kind"].isin(["appeal", "complaint"])
-        & c["court_level"].isin(["REGIONAL", "APPEAL"])
-    ]
-    kinds: Counter[str] = Counter()
-    examples: dict[str, str] = {}
-    total = 0
-    for key, cid, ids in zip(
-        appeals["case_key"], appeals["court_id"], appeals["cited_judgment_ids"], strict=False
-    ):
-        for i in ids:
-            target = id2case.get(int(i))
-            if target is None or target == key:
-                continue
-            total += 1
-            m = meta[target]
-            if m["parent_court_id"] == cid:
-                kind = "child court (plausible)"
-            elif m["court_id"] == cid:
-                kind = "same court"
-            else:
-                kind = "unrelated court"
-            kinds[kind] += 1
-            examples.setdefault(kind, f"{key} -> {target}")
-    return [
-        _row(
-            f"SAOS judgmentIds link from an appeal to a case in: {k}",
-            v,
-            total,
-            "links resolved against the court dictionary; example is appeal -> linked case",
-            examples[k],
-        )
-        for k, v in kinds.most_common()
-    ]
-
-
 def pairing(t: Tables) -> list[dict[str, Any]]:
     p = t.pairs
     ap = p[p["appeal_kind"] == "appeal"]
@@ -687,11 +626,13 @@ def texts(t: Tables) -> list[dict[str, Any]]:
             typos["ruling_text"].str.strip().head(2).tolist(),
         ),
         _row(
-            "ruling text empty (sentence ends with the header)",
+            "ruling extraction empty after the header",
             (rt.str.len() == 0).sum(),
             len(lab),
-            "",
+            "derived from extracted ruling text; does not prove raw SAOS truncation",
             lab.loc[rt.str.len() == 0, "appeal_case_key"].head(3).tolist(),
+            "Implementation change required: validate extraction against raw text; "
+            "exclude only confirmed missing rulings",
         ),
     ]
     d = t.datasets
@@ -727,7 +668,6 @@ def run_all(t: Tables) -> pd.DataFrame:
         divisions,
         judges,
         enrichment_coverage,
-        saos_links,
         pairing,
         texts,
     ):

@@ -72,8 +72,9 @@ _ISSUE_DESCRIPTIONS = {
         "but judge-based metadata features are unavailable."
     ),
     "record without a presiding judge in the modelling set": (
-        "The final modelling row has judges but no identified presiding judge. "
-        "Inferring one from ordering or names would introduce unsupported data."
+        "The role marker is missing in 398 rows, but the cases differ: 340 have "
+        "no judge, 54 have exactly one judge whose role is unambiguous, and only "
+        "4 have multiple judges without a role marker."
     ),
     "judge name anonymised to initials": (
         "The judge identity is represented only by initials or an anonymisation "
@@ -94,18 +95,6 @@ _ISSUE_DESCRIPTIONS = {
     "record without summary": (
         "The source record has no summary. The current model does not require "
         "this optional metadata field."
-    ),
-    "SAOS judgmentIds link from an appeal to a case in: unrelated court": (
-        "The court comparison does not establish the meaning or correctness of "
-        "the relation. A link may refer to a cited case or another procedural path."
-    ),
-    "SAOS judgmentIds link from an appeal to a case in: same court": (
-        "A same-court target is not proof that the relation identifies the "
-        "reviewed first-instance judgment."
-    ),
-    "SAOS judgmentIds link from an appeal to a case in: child court (plausible)": (
-        "A structurally plausible lower-court target is supporting evidence only; "
-        "the relation should also be checked against case number and text."
     ),
     "appeal sentence without text": (
         "The appellate SENTENCE record has no usable text, so its outcome cannot "
@@ -136,9 +125,11 @@ _ISSUE_DESCRIPTIONS = {
         "The outcome parser returns unknown even though the text contains "
         "language indicating dismissal. This creates label loss or bias."
     ),
-    "ruling text empty (sentence ends with the header)": (
-        "The appellate sentence contains only a header and no operative ruling. "
-        "The target outcome cannot be inferred safely."
+    "ruling extraction empty after the header": (
+        "The extracted text contains no characters after the recognised "
+        "challenged-judgment header and signature. This is a screening signal, "
+        "not proof that the raw SAOS document was physically truncated. The "
+        "extraction rule must be fixed or validated against raw text."
     ),
     "first-instance reasons with heavy anonymisation (> 5 '(...)' per 1k chars)": (
         "The reasons contain many anonymisation placeholders. Legal context and "
@@ -182,6 +173,13 @@ _RARE_CASE_EVIDENCE = {
         "The stored ruling excerpt is: “Uzasadnienie wyroku z dnia 18 kwietnia "
         "2014 r. ... Apelacja podlega oddaleniu.” The text explicitly contains "
         "the Polish dismissal phrase, while the extracted outcome is unknown."
+    ),
+    "ruling extraction empty after the header": (
+        "This is a derived screening signal, not a confirmed truncation flag. "
+        "Manual checks of comparable SAOS API records 43, 91, 31, and 72 found "
+        "complete operative rulings after the appeal header. The local dataset "
+        "does not contain raw text for the 1,239 flagged records, so the source "
+        "problem cannot currently be confirmed."
     ),
     "reasons record dated before its sentence": (
         "The CSV identifies separate-record case keys such as "
@@ -583,12 +581,17 @@ documented in <code>data/CLEANING.md</code>.</li>
 <li>Empty appellate sentences, missing headers, missing first-instance
 signatures, and unrecognised outcomes are not used to form reliable modelling
 rows.</li>
-<li>SAOS <code>judgmentIds</code> links are not trusted as the primary pairing
-mechanism; pairing uses the header and court hierarchy.</li>
+<li>An empty extracted ruling after the header is an implementation issue:
+the extraction must be fixed or checked against raw text before excluding a
+source record as truncated.</li>
+<li>SAOS <code>judgmentIds</code> are identifiers of cited judgments. They are
+not treated as an error or as the primary appeal-pairing mechanism.</li>
 <li>Short first-instance text is flagged, not automatically called truncated:
 it can be a valid short decision or an incomplete text.</li>
-<li>Missing presiding judge metadata is reported separately for the final
-modelling set: 398 of 10,644 rows (3.74%).</li>
+<li>Missing presiding-judge role metadata is reported separately for the final
+modelling set: 398 of 10,644 rows (3.74%). Of these, 54 have exactly one judge
+and can be corrected deterministically; 340 have no judge and 4 remain
+ambiguous.</li>
 </ul>
 
 <p class="small">The complete issue table, including counts, examples,
