@@ -65,6 +65,211 @@ class Tables:
     datasets: pd.DataFrame  # concatenated frozen datasets, text columns dropped
 
 
+_MODEL_GUIDANCE: dict[str, tuple[str, str]] = {
+    "SENTENCE record with empty textContent": (
+        "high",
+        "The record cannot provide text input and is excluded from usable modelling rows.",
+    ),
+    "REASONS record with empty textContent": (
+        "medium",
+        "It reduces reasons coverage; cases may still have usable reasons in another record.",
+    ),
+    "judgment date outside 1990–2026 or unparseable": (
+        "low",
+        "A small number of dates can corrupt temporal filtering or splits if left uncorrected.",
+    ),
+    "published before the judgment date": (
+        "medium",
+        "It can distort freshness checks and temporal analyses.",
+    ),
+    "reasons record dated before its sentence": (
+        "low",
+        "It mainly affects record ordering; the date is not a model input.",
+    ),
+    "reasons record dated > 1 year after its sentence": (
+        "low",
+        "It mainly affects interpretation of reasons timing; the date is not a model input.",
+    ),
+    "case signature not in the standard form": (
+        "high",
+        "It can prevent correct domain classification, pairing and case deduplication.",
+    ),
+    "  of which a digit after the division numeral (I 2C 15/13)": (
+        "medium",
+        "Some are valid local signature variants, but parser failures can lose or mispair cases.",
+    ),
+    "case with more than one SENTENCE record": (
+        "high",
+        "Wrong record selection can change the text or label associated with a case.",
+    ),
+    "case key shared by 3+ records": (
+        "high",
+        "Ambiguous records can cause incorrect text selection and duplicate leakage.",
+    ),
+    "labour / social-insurance signature outside a labour division": (
+        "high",
+        "Domain or division errors can put rows in the wrong modelling dataset.",
+    ),
+    "other signature inside a labour division": (
+        "medium",
+        "It can contaminate domain filters and make domain comparisons less reliable.",
+    ),
+    "record without any judge": (
+        "medium",
+        "It removes judge features for the affected rows, but text inputs remain available.",
+    ),
+    "record without a presiding judge in the modelling set": (
+        "medium",
+        "Missing judge metadata creates uneven availability of a potential model feature.",
+    ),
+    "judge name anonymised to initials": (
+        "medium",
+        "It weakens judge-based features and can make missingness informative.",
+    ),
+    "two judges in one name field": (
+        "medium",
+        "It corrupts judge features and may merge identities.",
+    ),
+    "record without keywords": (
+        "low",
+        "Keywords are optional metadata and are not used in the text-only input.",
+    ),
+    "record without legal bases": (
+        "medium",
+        "It removes legal-feature information when metadata features are used.",
+    ),
+    "record without summary": (
+        "low",
+        "Summary is not included in the current modelling input.",
+    ),
+    "SAOS judgmentIds link from an appeal to a case in: unrelated court": (
+        "high",
+        "Trusting these links would create incorrect first-instance pairs; "
+        "the pipeline ignores them.",
+    ),
+    "SAOS judgmentIds link from an appeal to a case in: same court": (
+        "high",
+        "Trusting these links would create incorrect first-instance pairs; "
+        "the pipeline ignores them.",
+    ),
+    "SAOS judgmentIds link from an appeal to a case in: child court (plausible)": (
+        "medium",
+        "Some links are plausible, but they are not sufficient without header "
+        "and hierarchy checks.",
+    ),
+    "appeal sentence without text": (
+        "high",
+        "The appeal outcome cannot be read from an empty sentence, so the row cannot be labelled.",
+    ),
+    "appeal text without a recognisable header": (
+        "high",
+        "It prevents reliable identification of the challenged first-instance judgment.",
+    ),
+    "header without a first-instance signature": (
+        "high",
+        "It prevents reliable pairing with the judgment under review.",
+    ),
+    "first-instance judgment not published in SAOS": (
+        "high",
+        "It creates strong publication-selection bias in the modelling sample.",
+    ),
+    "matched by signature but header date disagrees": (
+        "critical",
+        "A wrong pair directly assigns the wrong text and target to a training example.",
+    ),
+    "signature candidate rejected because header court disagrees": (
+        "high",
+        "It can hide a valid pair when the court name is parsed incorrectly; "
+        "accepting it would risk a wrong pair.",
+    ),
+    "appellate text is a hearing transcript, not a judgment": (
+        "high",
+        "It can corrupt outcome extraction and therefore the target label.",
+    ),
+    "ruling unrecognised although the text speaks of dismissing the appeal": (
+        "high",
+        "Missed outcomes create label loss or systematic label bias.",
+    ),
+    "ruling text empty (sentence ends with the header)": (
+        "high",
+        "The target cannot be reliably extracted from an empty ruling.",
+    ),
+    "first-instance reasons with heavy anonymisation (> 5 '(...)' per 1k chars)": (
+        "medium",
+        "Information loss and repeated placeholders can reduce text-model quality.",
+    ),
+    "first-instance text shorter than 2,000 chars": (
+        "medium",
+        "Short text may be a valid brief decision or an incomplete input; it needs review.",
+    ),
+}
+
+_TREATMENTS: dict[str, str] = {
+    "SENTENCE record with empty textContent": "Exclude; retain for audit.",
+    "REASONS record with empty textContent": (
+        "Retain if reasons exist elsewhere; otherwise exclude."
+    ),
+    "judgment date outside 1990–2026 or unparseable": "Correct documented typos; audit the rest.",
+    "published before the judgment date": "Retain; audit. Do not use publication_date.",
+    "reasons record dated before its sentence": "Retain if valid; flag the date anomaly.",
+    "reasons record dated > 1 year after its sentence": "Retain if valid; flag the date anomaly.",
+    "case signature not in the standard form": (
+        "Implementation change required: extend parser; otherwise exclude."
+    ),
+    "  of which a digit after the division numeral (I 2C 15/13)": (
+        "Implementation change required: parse sub-divisions; retain if paired."
+    ),
+    "case with more than one SENTENCE record": (
+        "Implementation change required: deterministic record selection; audit ambiguity."
+    ),
+    "case key shared by 3+ records": (
+        "Implementation change required: merge compatible records; exclude ambiguity."
+    ),
+    "labour / social-insurance signature outside a labour division": (
+        "Correct verified mapping; rebuild tables."
+    ),
+    "other signature inside a labour division": "Review mapping; exclude unresolved mismatches.",
+    "record without any judge": "Retain if otherwise valid; leave judge missing.",
+    "record without a presiding judge in the modelling set": "Retain; do not infer the judge.",
+    "judge name anonymised to initials": "Retain; treat judge feature as missing.",
+    "two judges in one name field": "Implementation change required: validate name splitting.",
+    "record without keywords": "Retain; optional metadata.",
+    "record without legal bases": "Retain if valid; leave legal bases missing.",
+    "record without summary": "Retain; optional metadata.",
+    "SAOS judgmentIds link from an appeal to a case in: unrelated court": (
+        "Ignore; use header-based pairing."
+    ),
+    "SAOS judgmentIds link from an appeal to a case in: same court": (
+        "Ignore; require independent confirmation."
+    ),
+    "SAOS judgmentIds link from an appeal to a case in: child court (plausible)": (
+        "Diagnostic only; require confirmation."
+    ),
+    "appeal sentence without text": "Exclude from labels; retain for audit.",
+    "appeal text without a recognisable header": (
+        "Exclude unless a reliable reference is recovered."
+    ),
+    "header without a first-instance signature": (
+        "Exclude unless another validated reference exists."
+    ),
+    "first-instance judgment not published in SAOS": (
+        "Exclude from paired modelling; retain for coverage audit."
+    ),
+    "matched by signature but header date disagrees": "Exclude; retain in pairs.parquet for audit.",
+    "appellate text is a hearing transcript, not a judgment": (
+        "Exclude unless clean judgment text exists."
+    ),
+    "ruling unrecognised although the text speaks of dismissing the appeal": (
+        "Implementation change required: expand outcome patterns; exclude unknowns."
+    ),
+    "ruling text empty (sentence ends with the header)": "Exclude from labelled modelling.",
+    "first-instance reasons with heavy anonymisation (> 5 '(...)' per 1k chars)": (
+        "Retain; flag and evaluate separately."
+    ),
+    "first-instance text shorter than 2,000 chars": "Retain; flag, do not exclude by length alone.",
+}
+
+
 def load(interim: Path = config.INTERIM_DIR, processed: Path = config.PROCESSED_DIR) -> Tables:
     records = pq.read_table(interim / "records.parquet", columns=RECORD_COLUMNS).to_pandas()
     cases = pd.read_parquet(interim / "cases.parquet")
@@ -85,8 +290,12 @@ def _row(
     out_of: int,
     note: str = "",
     example: Any = "",
-    treatment: str = "Not assessed",
+    treatment: str | None = None,
 ) -> dict[str, Any]:
+    importance, _ = _MODEL_GUIDANCE.get(
+        issue,
+        ("unknown", "Not assessed for model impact."),
+    )
     return {
         "issue": issue,
         "count": int(count),
@@ -94,7 +303,8 @@ def _row(
         "share": round(count / out_of, 4) if out_of else None,
         "note": note,
         "example": str(example)[:120],
-        "treatment": treatment,
+        "treatment": treatment or _TREATMENTS.get(issue, "Treatment requires review"),
+        "model_importance": importance,
     }
 
 
@@ -121,6 +331,8 @@ def empty_texts(t: Tables) -> list[dict[str, Any]]:
             len(reas),
             "reasons announced but not published",
             reas.loc[reas["html_len"] == 0, "id"].head(3).tolist(),
+            "Retain the case if reasons are available in a separate record; "
+            "otherwise exclude it from modelling data",
         ),
     ]
 
@@ -174,6 +386,8 @@ def dates(t: Tables) -> list[dict[str, Any]]:
             len(two),
             "in cases with separate SENTENCE and REASONS records",
             two.loc[gap < 0, "case_key"].head(3).tolist(),
+            "Retain if the case has usable text and a valid pairing; "
+            "flag the date anomaly for audit",
         ),
         _row(
             "reasons record dated > 1 year after its sentence",
@@ -181,6 +395,8 @@ def dates(t: Tables) -> list[dict[str, Any]]:
             len(two),
             "REASONS judgment_date is often the date reasons were written, not the ruling date",
             two.loc[gap > 365, "case_key"].head(3).tolist(),
+            "Retain if the case has usable text and a valid pairing; "
+            "flag the date anomaly for audit",
         ),
     ]
 
@@ -201,6 +417,8 @@ def signatures(t: Tables) -> list[dict[str, Any]]:
             len(r),
             f"most common shapes {forms.most_common(4)}",
             bad["case_number"].head(3).tolist(),
+            "Retain only when the signature can be parsed and the case can "
+            "be paired; otherwise exclude from modelling data",
         ),
         _row(
             "  of which a digit after the division numeral (I 2C 15/13)",
@@ -208,6 +426,8 @@ def signatures(t: Tables) -> list[dict[str, Any]]:
             len(bad),
             "sub-divisions numbered with digits in a few courts",
             digit_div["case_number"].head(3).tolist(),
+            "Treat as a local signature variant; do not reject solely for its "
+            "format, but require successful parsing and pairing",
         ),
         _row(
             "case with more than one SENTENCE record",
@@ -259,13 +479,29 @@ def judges(t: Tables) -> list[dict[str, Any]]:
         j for j in flat if re.fullmatch(r"(?:[a-ząćęłńóśźż]\.\s?)+(?:\(\d+\))?", j) or "(...)" in j
     ]
     joined = [j for j in flat if " i " in j]
-    return [
+    dataset_missing_presiding = (
+        t.datasets["first_presiding_judge"].isna()
+        if "first_presiding_judge" in t.datasets
+        else pd.Series(dtype=bool)
+    )
+    rows = [
         _row(
             "record without any judge",
             (n_judges == 0).sum(),
             len(r),
             "",
             r.loc[n_judges == 0, "id"].head(3).tolist(),
+        ),
+        _row(
+            "record without a presiding judge in the modelling set",
+            dataset_missing_presiding.sum(),
+            len(dataset_missing_presiding),
+            "final modelling rows with missing first-instance presiding judge",
+            t.datasets.loc[dataset_missing_presiding, ["pair_id", "first_case_key"]]
+            .head(3)
+            .to_dict("records")
+            if len(dataset_missing_presiding)
+            else [],
         ),
         _row(
             "judge name anonymised to initials",
@@ -282,6 +518,7 @@ def judges(t: Tables) -> list[dict[str, Any]]:
             joined[:2],
         ),
     ]
+    return rows
 
 
 def enrichment_coverage(t: Tables) -> list[dict[str, Any]]:
@@ -390,11 +627,13 @@ def pairing(t: Tables) -> list[dict[str, Any]]:
             keys(sig[sig["first_case_key"].isna()]),
         ),
         _row(
-            "matched by signature but header date or court disagrees",
+            "matched by signature but header date disagrees",
             len(matched) - len(confirmed),
             len(matched),
-            "sibling courts reuse signatures; another judgment in the same case",
+            "the matched candidate has a different date from the header; "
+            "court-mismatched candidates are rejected earlier",
             keys(matched[~matched.index.isin(confirmed.index)]),
+            "Excluded from modelling; retained in pairs.parquet for diagnostics",
         ),
     ]
 
@@ -469,10 +708,10 @@ def texts(t: Tables) -> list[dict[str, Any]]:
         )
         rows.append(
             _row(
-                "first-instance reasons shorter than 2,000 chars",
+                "first-instance text shorter than 2,000 chars",
                 (d["first_reasons_len"] < 2000).sum(),
                 len(d),
-                "likely truncated or only a fragment published",
+                "may be a valid short decision or an incomplete text; not assumed to be truncation",
                 d.loc[d["first_reasons_len"] < 2000, "pair_id"].head(2).tolist(),
             )
         )
